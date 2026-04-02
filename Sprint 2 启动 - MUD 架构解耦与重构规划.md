@@ -22,21 +22,45 @@
 - **退出游戏**（Extend关系）
 
 ```mermaid
-useCaseDiagram
-    participant User as "用户"
-    participant GameEngine as "游戏引擎"
-    participant CreateCharacter as "创建角色"
-    participant Battle as "战斗"
-    participant CheckStatus as "查看状态"
-    participant QuitGame as "退出游戏"
-    participant LevelUp as "升级"
+%% MUD游戏核心模块 - 用例图 (区分Include/Extend)
+%% 参与者：玩家
+%% Include：必须执行的主干流程（解析输入命令）
+%% Extend：条件触发的扩展/异常流程
+usecaseDiagram
+    actor 玩家 as Player
     
-    User --> GameEngine
-    GameEngine -- includes --> CreateCharacter
-    GameEngine -- extends --> Battle
-    GameEngine -- extends --> CheckStatus
-    GameEngine -- extends --> QuitGame
-    Battle -- extends --> LevelUp
+    %% 主干公共用例 (Include)
+    usecase 解析输入命令 as ParseCmd <<Include>>
+    
+    %% 核心业务用例
+    usecase 创建角色 as CreateRole
+    usecase 发起战斗 as Fight
+    usecase 查看角色状态 as CheckStatus
+    usecase 退出游戏 as QuitGame
+    
+    %% 扩展/异常用例 (Extend)
+    usecase 重复创建角色 as Ext1 <<Extend>>
+    usecase 血量耗尽 as Ext2 <<Extend>>
+    usecase 未创建角色 as Ext3 <<Extend>>
+    usecase 输入未知命令 as Ext4 <<Extend>>
+
+    %% 关联关系：玩家 -> 核心用例
+    Player --> CreateRole
+    Player --> Fight
+    Player --> CheckStatus
+    Player --> QuitGame
+
+    %% Include 关系：所有核心用例 包含 解析命令（主干必执行）
+    CreateRole -.-> ParseCmd : includes
+    Fight -.-> ParseCmd : includes
+    CheckStatus -.-> ParseCmd : includes
+    QuitGame -.-> ParseCmd : includes
+
+    %% Extend 关系：扩展用例 扩展 核心用例（条件触发）
+    Ext1 --|> CreateRole : extends
+    Ext2 --|> Fight : extends
+    Ext3 --|> CheckStatus : extends
+    Ext4 --|> ParseCmd : extends
 ```
 
 ### 3. 静态类图
