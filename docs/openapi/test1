@@ -1,0 +1,2 @@
+- name: Run Tests
+  run: python -m unittest test_mud_game.py
