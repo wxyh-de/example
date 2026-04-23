@@ -10,16 +10,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          node-version: 18
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
+          python-version: '3.10'
 
       - name: Run Tests
-        run: npm test
+        run: python -m unittest test_mud_game.py
