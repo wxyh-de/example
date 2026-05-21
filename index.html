@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUD 游戏 - Web 版</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #app {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #e94560, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid rgba(233, 69, 96, 0.3);
+            padding-bottom: 10px;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 400px;
+            background: #0a0a1a;
+            border-radius: 10px;
+            border: 2px solid #e94560;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .label {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .hp-bar {
+            height: 25px;
+            background: #2a2a4a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .exp-bar {
+            height: 20px;
+            background: #2a2a4a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .exp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #45b7aa);
+            transition: width 0.5s;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4ecdc4, #45b7aa);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #888;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #e94560;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .item-card .item-name {
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .item-card .item-qty {
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s;
+        }
+
+        .message.success {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        .message.error {
+            background: rgba(233, 69, 96, 0.2);
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .trade-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>⚔️ MUD 游戏 - Web 版</h1>
+            <p>一个简单但有趣的文字冒险游戏</p>
+        </div>
+
+        <div v-if="message" :class="['message', messageType]">
+            {{ message }}
+        </div>
+
+        <div class="main-container">
+            <div class="panel">
+                <h2>🎮 游戏画布</h2>
+                <canvas id="gameCanvas"></canvas>
+                
+                <div class="button-group" style="margin-top: 20px;">
+                    <button class="btn" @click="fight" :disabled="!player">
+                        ⚔️ 战斗
+                    </button>
+                    <button class="btn btn-primary" @click="resetGame">
+                        🔄 重置游戏
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📊 玩家状态</h2>
+                
+                <div v-if="!player" class="empty-state">
+                    <p>还没有创建玩家！</p>
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label>玩家名称</label>
+                        <input v-model="newPlayerName" @keyup.enter="createPlayer" placeholder="输入玩家名称...">
+                    </div>
+                    <button class="btn" @click="createPlayer">
+                        创建玩家
+                    </button>
+                </div>
+
+                <div v-else>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">玩家名称</div>
+                            <div class="value">{{ player.name }}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">等级</div>
+                            <div class="value">{{ player.level }}</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="margin-bottom: 20px;">
+                        <div class="label">生命值 (HP)</div>
+                        <div class="hp-bar">
+                            <div class="hp-fill" :style="{ width: player.hp + '%' }">
+                                {{ player.hp }} / 100
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="label">经验值 (EXP)</div>
+                        <div class="exp-bar">
+                            <div class="exp-fill" :style="{ width: Math.min(player.exp, 100) + '%' }"></div>
+                        </div>
+                        <div style="margin-top: 8px; font-weight: bold;">
+                            {{ player.exp }} / 100
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="player" style="margin-top: 30px;">
+                    <h2>🎒 背包管理</h2>
+                    <div class="input-group">
+                        <label>添加物品</label>
+                        <input v-model="itemName" placeholder="物品名称">
+                    </div>
+                    <div class="input-group">
+                        <label>数量</label>
+                        <input type="number" v-model="itemQuantity" min="1">
+                    </div>
+                    <button class="btn btn-primary" @click="addItem" style="margin-bottom: 20px;">
+                        添加物品
+                    </button>
+
+                    <div v-if="Object.keys(player.inventory).length > 0" class="inventory-grid">
+                        <div class="item-card" v-for="(qty, item) in player.inventory" :key="item">
+                            <div class="item-name">{{ item }}</div>
+                            <div class="item-qty">数量: {{ qty }}</div>
+                        </div>
+                    </div>
+                    <div v-else class="empty-state">
+                        背包是空的
+                    </div>
+
+                    <div class="trade-section">
+                        <h2>🤝 交易系统</h2>
+                        <div v-if="!otherPlayer" style="margin-bottom: 20px;">
+                            <div class="input-group">
+                                <label>其他玩家名称</label>
+                                <input v-model="otherPlayerName" placeholder="输入其他玩家名称">
+                            </div>
+                            <button class="btn" @click="createOtherPlayer">
+                                创建其他玩家
+                            </button>
+                        </div>
+                        <div v-else>
+                            <div class="input-group">
+                                <label>物品名称</label>
+                                <input v-model="tradeItemName" placeholder="物品名称">
+                            </div>
+                            <div class="input-group">
+                                <label>数量</label>
+                                <input type="number" v-model="tradeQuantity" min="1">
+                            </div>
+                            <button class="btn btn-primary" @click="tradeItem">
+                                交易给 {{ otherPlayer.name }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                const player = ref(null);
+                const otherPlayer = ref(null);
+                const newPlayerName = ref('');
+                const otherPlayerName = ref('');
+                const itemName = ref('');
+                const itemQuantity = ref(1);
+                const tradeItemName = ref('');
+                const tradeQuantity = ref(1);
+                const message = ref('');
+                const messageType = ref('');
+                let canvas, ctx;
+                let animationFrameId;
+
+                const API_BASE = 'http://localhost:5000/api';
+
+                async function fetchData(url, options = {}) {
+                    try {
+                        const response = await fetch(`${API_BASE}${url}`, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...options.headers
+                            },
+                            ...options
+                        });
+                        return await response.json();
+                    } catch (error) {
+                        showMessage('网络错误，请确保后端服务已启动', 'error');
+                        console.error(error);
+                        return null;
+                    }
+                }
+
+                function showMessage(text, type = 'success') {
+                    message.value = text;
+                    messageType.value = type;
+                    setTimeout(() => {
+                        message.value = '';
+                    }, 3000);
+                }
+
+                async function createPlayer() {
+                    if (!newPlayerName.value.trim()) {
+                        showMessage('请输入玩家名称', 'error');
+                        return;
+                    }
+
+                    const result = await fetchData('/player', {
+                        method: 'POST',
+                        body: JSON.stringify({ name: newPlayerName.value })
+                    });
+
+                    if (result && result.success) {
+                        player.value = result.player;
+                        showMessage(`玩家 ${result.player.name} 创建成功！`, 'success');
+                        newPlayerName.value = '';
+                    } else {
+                        showMessage(result?.error || '创建玩家失败', 'error');
+                    }
+                }
+
+                async function createOtherPlayer() {
+                    if (!otherPlayerName.value.trim()) {
+                        showMessage('请输入其他玩家名称', 'error');
+                        return;
+                    }
+
+                    const result = await fetchData('/player/other', {
+                        method: 'POST',
+                        body: JSON.stringify({ name: otherPlayerName.value })
+                    });
+
+                    if (result && result.success) {
+                        otherPlayer.value = result.player;
+                        otherPlayer._id = result.player_id;
+                        showMessage(`其他玩家 ${result.player.name} 创建成功！`, 'success');
+                        otherPlayerName.value = '';
+                    } else {
+                        showMessage(result?.error || '创建其他玩家失败', 'error');
+                    }
+                }
+
+                async function fetchPlayer() {
+                    const result = await fetchData('/player');
+                    if (result && result.success) {
+                        player.value = result.player;
+                    }
+                }
+
+                async function fight() {
+                    const result = await fetchData('/fight', {
+                        method: 'POST'
+                    });
+
+                    if (result && result.success) {
+                        player.value = result.player;
+                        showMessage(`战斗成功！获得 ${result.exp_gained} 经验，损失 ${result.hp_lost} 血量`, 'success');
+                        animateFight();
+                    } else {
+                        showMessage(result?.error || '战斗失败', 'error');
+                    }
+                }
+
+                async function addItem() {
+                    if (!itemName.value.trim()) {
+                        showMessage('请输入物品名称', 'error');
+                        return;
+                    }
+
+                    const result = await fetchData('/inventory/item', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            item_name: itemName.value,
+                            quantity: parseInt(itemQuantity.value) || 1
+                        })
+                    });
+
+                    if (result && result.success) {
+                        player.value = result.player;
+                        showMessage(`成功添加 ${itemQuantity.value} 个 ${itemName.value}！`, 'success');
+                        itemName.value = '';
+                        itemQuantity.value = 1;
+                    } else {
+                        showMessage(result?.error || '添加物品失败', 'error');
+                    }
+                }
+
+                async function tradeItem() {
+                    if (!tradeItemName.value.trim()) {
+                        showMessage('请输入物品名称', 'error');
+                        return;
+                    }
+
+                    const result = await fetchData('/trade', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            item_name: tradeItemName.value,
+                            quantity: parseInt(tradeQuantity.value) || 1,
+                            target_player_id: otherPlayer._id
+                        })
+                    });
+
+                    if (result && result.success) {
+                        player.value = result.source_player;
+                        showMessage(result.message, 'success');
+                        tradeItemName.value = '';
+                        tradeQuantity.value = 1;
+                    } else {
+                        showMessage(result?.error || '交易失败', 'error');
+                    }
+                }
+
+                async function resetGame() {
+                    const result = await fetchData('/game/reset', {
+                        method: 'POST'
+                    });
+
+                    if (result && result.success) {
+                        player.value = null;
+                        otherPlayer.value = null;
+                        showMessage('游戏已重置', 'success');
+                    }
+                }
+
+                function initCanvas() {
+                    canvas = document.getElementById('gameCanvas');
+                    ctx = canvas.getContext('2d');
+                    resizeCanvas();
+                    window.addEventListener('resize', resizeCanvas);
+                }
+
+                function resizeCanvas() {
+                    const rect = canvas.getBoundingClientRect();
+                    canvas.width = rect.width * window.devicePixelRatio;
+                    canvas.height = rect.height * window.devicePixelRatio;
+                    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                }
+
+                function drawCanvas() {
+                    const width = canvas.getBoundingClientRect().width;
+                    const height = canvas.getBoundingClientRect().height;
+                    
+                    ctx.fillStyle = '#0a0a1a';
+                    ctx.fillRect(0, 0, width, height);
+
+                    drawGrid(width, height);
+                    
+                    if (player.value) {
+                        drawPlayer(width, height);
+                    }
+
+                    animationFrameId = requestAnimationFrame(drawCanvas);
+                }
+
+                function drawGrid(width, height) {
+                    ctx.strokeStyle = 'rgba(233, 69, 96, 0.1)';
+                    ctx.lineWidth = 1;
+                    
+                    for (let x = 0; x < width; x += 50) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, height);
+                        ctx.stroke();
+                    }
+                    
+                    for (let y = 0; y < height; y += 50) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(width, y);
+                        ctx.stroke();
+                    }
+                }
+
+                function drawPlayer(width, height) {
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+                    const time = Date.now() * 0.001;
+                    
+                    const glowRadius = 30 + Math.sin(time * 2) * 5;
+                    const gradient = ctx.createRadialGradient(
+                        centerX, centerY, 0,
+                        centerX, centerY, glowRadius
+                    );
+                    gradient.addColorStop(0, 'rgba(78, 205, 196, 0.5)');
+                    gradient.addColorStop(1, 'rgba(78, 205, 196, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, glowRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#4ecdc4';
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 25, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(centerX - 8, centerY - 5, 5, 0, Math.PI * 2);
+                    ctx.arc(centerX + 8, centerY - 5, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#0a0a1a';
+                    ctx.beginPath();
+                    ctx.arc(centerX - 8, centerY - 5, 2, 0, Math.PI * 2);
+                    ctx.arc(centerX + 8, centerY - 5, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (player.value) {
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 14px "Segoe UI"';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(player.value.name, centerX, centerY + 50);
+                    }
+                }
+
+                let fightAnimation = { active: false, time: 0 };
+                function animateFight() {
+                    fightAnimation.active = true;
+                    fightAnimation.time = 0;
+                    
+                    const animate = () => {
+                        if (fightAnimation.time < 60) {
+                            if (fightAnimation.time % 10 < 5) {
+                                ctx.fillStyle = 'rgba(233, 69, 96, 0.3)';
+                            } else {
+                                ctx.fillStyle = 'rgba(78, 205, 196, 0.3)';
+                            }
+                            ctx.fillRect(0, 0, canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
+                            fightAnimation.time++;
+                            requestAnimationFrame(animate);
+                        } else {
+                            fightAnimation.active = false;
+                        }
+                    };
+                    animate();
+                }
+
+                onMounted(async () => {
+                    initCanvas();
+                    drawCanvas();
+                    await fetchPlayer();
+                });
+
+                return {
+                    player,
+                    otherPlayer,
+                    newPlayerName,
+                    otherPlayerName,
+                    itemName,
+                    itemQuantity,
+                    tradeItemName,
+                    tradeQuantity,
+                    message,
+                    messageType,
+                    createPlayer,
+                    createOtherPlayer,
+                    fight,
+                    addItem,
+                    tradeItem,
+                    resetGame
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
